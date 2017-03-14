@@ -1,0 +1,2 @@
+# GIMC
+GPGPU Image Convolution
