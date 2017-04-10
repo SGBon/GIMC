@@ -1,5 +1,6 @@
 #include "clutil.h"
 #include <stdio.h>
+#include <stdlib.h>
 
 void print_error(const char *function, cl_int error){
   fprintf(stderr,"Error when calling %s, code: %d\n",function,error);
@@ -11,6 +12,7 @@ void read_cl_source(const char *filename, char **source_out){
   FILE * const fp = fopen(filename,"rb");
   if(!fp){
     fprintf(stderr,"Failed to load kernel\n");
+    exit(EXIT_FAILURE);
   }
 
   fseek(fp,0,SEEK_END);
