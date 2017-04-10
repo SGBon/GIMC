@@ -6,10 +6,10 @@ __kernel
 void convolve2d(__global unsigned char *image,
   __global float *filter,
   __global unsigned char *result,
-  __constant unsigned int image_width,
-  __constant unsigned int image_height,
-  __constant unsigned int filter_len,
-  __constant unsigned int num_filters)
+  unsigned int image_width,
+  unsigned int image_height,
+  unsigned int filter_len,
+  unsigned int num_filters)
 {
   int pixel = get_global_id(0); /* current pixel */
   int fid = get_global_id(1); /* index of filter */

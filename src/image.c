@@ -11,6 +11,7 @@ void gimc_image_load(struct gimc_image *image,const char * filename){
 
   image->width = FreeImage_GetWidth(image->bitmap);
   image->height = FreeImage_GetHeight(image->bitmap);
+  image->bits = FreeImage_GetBits(image->bitmap);
 }
 
 void gimc_image_unload(struct gimc_image *image){

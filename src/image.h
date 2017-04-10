@@ -6,6 +6,7 @@
 
 struct gimc_image{
   FIBITMAP *bitmap;
+  uint8_t *bits;
   size_t width;
   size_t height;
 };
