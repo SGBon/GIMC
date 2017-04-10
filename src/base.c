@@ -9,28 +9,34 @@
 #include <CL/cl.h>
 
 /* project headers */
-#include "common.h"
+#include "image.h"
+#include "clutil.h"
 
 int main(int argc, char **argv){
-  FIBITMAP *bitmap;
+  if(argc < 3){
+    printf("Usage: %s [Image File] [Device Option]\n",argv[0]);
+    return -1;
+  }
+
+  cl_device_type device_type;
+  switch(atoi(argv[2])){
+  case 0:
+    device_type = CL_DEVICE_TYPE_CPU;
+    break;
+  case 1:
+  default:
+    device_type = CL_DEVICE_TYPE_GPU;
+    break;
+  }
+
+  char * const image_path = argv[1];
   struct gimc_image image;
-  char * const image_file = argv[1];
 
-  /* load image and convert to greyscale */
-  const FREE_IMAGE_FORMAT fif = FreeImage_GetFIFFromFilename(image_file);
-  bitmap = FreeImage_Load(fif, image_file,0);
-  image.bitmap = FreeImage_ConvertToGreyscale(bitmap);
-  FreeImage_Unload(bitmap);
-
-  image.width = FreeImage_GetWidth(image.bitmap);
-  image.height = FreeImage_GetHeight(image.bitmap);
-  const unsigned int depth = FreeImage_GetBPP(image.bitmap)/8;
-  const size_t image_size = image.width * image.height * depth;
-
-  uint8_t * const image_data = FreeImage_GetBits(image.bitmap);
+  /* load grayscale of image */
+  gimc_image_load(&image,image_path);
 
   FreeImage_Save(FIF_JPEG,image.bitmap,"gray.jpg",JPEG_DEFAULT);
 
-  FreeImage_Unload(image.bitmap);
+  gimc_image_unload(&image);
   return 0;
 }
