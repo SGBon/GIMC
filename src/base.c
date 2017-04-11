@@ -147,8 +147,9 @@ int main(int argc, char **argv){
   err |= clSetKernelArg(kernel,2,sizeof(cl_mem),&d_result);
   err |= clSetKernelArg(kernel,3,sizeof(unsigned int),&image.width);
   err |= clSetKernelArg(kernel,4,sizeof(unsigned int),&image.height);
-  err |= clSetKernelArg(kernel,5,sizeof(unsigned int),&filter_len);
-  err |= clSetKernelArg(kernel,6,sizeof(unsigned int),&num_filters);
+  err |= clSetKernelArg(kernel,5,sizeof(unsigned int),&filter_width);
+  err |= clSetKernelArg(kernel,6,sizeof(unsigned int),&filter_width);
+  err |= clSetKernelArg(kernel,7,sizeof(unsigned int),&num_filters);
 
   /* write buffers to global memory */
   err = clEnqueueWriteBuffer(commands,d_image,CL_FALSE,0,sizeof(uint8_t)*image_size,image.bits,0,NULL,NULL);
