@@ -10,6 +10,6 @@
  * mu: offset for center of gaussian ie. mean
  * n is assumed to be odd
  */
-extern void filter_gauss2d(float *filter, unsigned int n, float sigma);
+extern void filter_gauss2d(double *filter, unsigned int n, double sigma);
 
 #endif

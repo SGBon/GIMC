@@ -119,21 +119,21 @@ int main(int argc, char **argv){
   free_cl_source(kernel_source);
 
   /* setup filters and result on host */
-  const unsigned int filter_width = 49;
-  const unsigned int filter_len = filter_width*filter_width;
+  const size_t filter_width = 49;
+  const size_t filter_len = filter_width*filter_width;
   const unsigned int num_filters = 1;
-  const unsigned int image_size = image.width*image.height;
-  float h_filter[filter_len];
+  const size_t image_size = image.width*image.height;
+  double *h_filter = malloc(sizeof(double)*filter_len);
 
   /* get a gaussian */
-  filter_gauss2d(h_filter,filter_width,0.1f);
+  filter_gauss2d(h_filter,filter_width,5.0);
 
-  uint8_t h_result[image_size];
-  memset(&h_result,0,sizeof(uint8_t)*image_size);
+  uint8_t *h_result = malloc(sizeof(uint8_t)*image_size);
+  memset(h_result,0,sizeof(uint8_t)*image_size);
 
   /* set up device memory and load image and filter data */
   d_image = clCreateBuffer(context,CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,sizeof(uint8_t)*image_size,image.bits,NULL);
-  d_filter = clCreateBuffer(context,CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,sizeof(float)*filter_len*num_filters,h_filter,NULL);
+  d_filter = clCreateBuffer(context,CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,sizeof(double)*filter_len*num_filters,h_filter,NULL);
   d_result = clCreateBuffer(context,CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,sizeof(uint8_t)*image_size,h_result,NULL);
 
   kernel = clCreateKernel(program,"convolve2d",&err);
@@ -148,13 +148,13 @@ int main(int argc, char **argv){
   err |= clSetKernelArg(kernel,2,sizeof(cl_mem),&d_result);
   err |= clSetKernelArg(kernel,3,sizeof(unsigned int),&image.width);
   err |= clSetKernelArg(kernel,4,sizeof(unsigned int),&image.height);
-  err |= clSetKernelArg(kernel,5,sizeof(unsigned int),&filter_width);
-  err |= clSetKernelArg(kernel,6,sizeof(unsigned int),&filter_width);
+  err |= clSetKernelArg(kernel,5,sizeof(size_t),&filter_width);
+  err |= clSetKernelArg(kernel,6,sizeof(size_t),&filter_width);
   err |= clSetKernelArg(kernel,7,sizeof(unsigned int),&num_filters);
 
   /* write buffers to global memory */
   err = clEnqueueWriteBuffer(commands,d_image,CL_FALSE,0,sizeof(uint8_t)*image_size,image.bits,0,NULL,NULL);
-  err = clEnqueueWriteBuffer(commands,d_filter,CL_FALSE,0,sizeof(float)*filter_len,&h_filter,0,NULL,NULL);
+  err = clEnqueueWriteBuffer(commands,d_filter,CL_FALSE,0,sizeof(double)*filter_len,h_filter,0,NULL,NULL);
 
   const size_t global[2] = {image_size, num_filters};
 
@@ -162,13 +162,15 @@ int main(int argc, char **argv){
   err = clEnqueueNDRangeKernel(commands,kernel,2,NULL,global,NULL,0,NULL,NULL);
 
   /* read from buffer after all commands have finished */
-  err = clEnqueueReadBuffer(commands,d_result,CL_TRUE,0,sizeof(uint8_t)*image_size,&h_result,0,NULL,NULL);
+  err = clEnqueueReadBuffer(commands,d_result,CL_TRUE,0,sizeof(uint8_t)*image_size,h_result,0,NULL,NULL);
 
   /* put result into image */
-  memcpy(image.bits,&h_result,sizeof(uint8_t)*image_size);
+  memcpy(image.bits,h_result,sizeof(uint8_t)*image_size);
   /* save output */
   FreeImage_Save(FIF_JPEG,image.bitmap,"gray.jpg",JPEG_DEFAULT);
 
+  free(h_filter);
+  free(h_result);
   free(platform_ids);
   clReleaseKernel(kernel);
   clReleaseMemObject(d_image);

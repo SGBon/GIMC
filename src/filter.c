@@ -3,16 +3,16 @@
 #include "filter.h"
 
 /* guassian function */
-static float gaussian(float x, float y, float sigma);
+static double gaussian(double x, double y, double sigma);
 
-void filter_gauss2d(float *filter, unsigned int n, float sigma){
-  const float coefficient = (1.0/(2*M_PI*sigma*sigma));
+void filter_gauss2d(double *filter, unsigned int n, double sigma){
+  const double coefficient = (1.0/(2*M_PI*sigma*sigma));
   const int offset = (n-1) / 2;
-  float sum = 0.0f;
+  double sum = 0.0;
   /* construct gaussian */
   for(int i = 0; i < n; ++i){
     for(int j = 0; j < n; ++j){
-      const float next  = coefficient * gaussian(i - offset,j-offset,sigma);
+      const double next  = coefficient * gaussian(i - offset,j-offset,sigma);
       filter[i*n+j] = next;
       sum += next;
     }
@@ -25,6 +25,7 @@ void filter_gauss2d(float *filter, unsigned int n, float sigma){
     }
   }
 }
-float gaussian(float x, float y, float sigma){
+
+double gaussian(double x, double y, double sigma){
   return exp(-(x*x + y*y)/(2*sigma*sigma));
 }
