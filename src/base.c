@@ -14,6 +14,7 @@
 /* project headers */
 #include "image.h"
 #include "clutil.h"
+#include "filter.h"
 
 int main(int argc, char **argv){
   if(argc < 3){
@@ -118,15 +119,15 @@ int main(int argc, char **argv){
   free_cl_source(kernel_source);
 
   /* setup filters and result on host */
-  const unsigned int filter_width = 3;
+  const unsigned int filter_width = 49;
   const unsigned int filter_len = filter_width*filter_width;
   const unsigned int num_filters = 1;
   const unsigned int image_size = image.width*image.height;
   float h_filter[filter_len];
-  /* create averaging filter for now */
-  for(unsigned int i = 0; i < filter_len;++i){
-    h_filter[i] = 1.0f/filter_len;
-  }
+
+  /* get a gaussian */
+  filter_gauss2d(h_filter,filter_width,0.1f);
+
   uint8_t h_result[image_size];
   memset(&h_result,0,sizeof(uint8_t)*image_size);
 

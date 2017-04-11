@@ -15,8 +15,9 @@ include_directories(${OpenCL_INCLUDE_DIRS})
 set(COMMON_SRC SHARED clutil.c)
 add_library(Common ${COMMON_SRC})
 
-set(GIMC_IMAGE_SRC image.c)
+set(GIMC_IMAGE_SRC image.c filter.c)
 add_library(GimcImage SHARED ${GIMC_IMAGE_SRC})
+#set_property(TARGET GimcImage PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 set(BASE_SRC base.c)
 add_executable(Base ${BASE_SRC})

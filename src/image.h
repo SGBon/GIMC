@@ -12,9 +12,9 @@ struct gimc_image{
 };
 
 /* load an image file into a gimc_image struct */
-void gimc_image_load(struct gimc_image *image,const char * filename);
+extern void gimc_image_load(struct gimc_image *image,const char * filename);
 
 /* free resources used by image */
-void gimc_image_unload(struct gimc_image *image);
+extern void gimc_image_unload(struct gimc_image *image);
 
 #endif
