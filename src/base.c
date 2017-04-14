@@ -123,7 +123,7 @@ int main(int argc, char **argv){
   const size_t filter_len = filter_width*filter_width;
   const unsigned int num_filters = 1;
   const size_t image_size = image.width*image.height;
-  double *h_filter = malloc(sizeof(double)*filter_len);
+  float *h_filter = malloc(sizeof(float)*filter_len);
 
   /* get a Gaussian */
   filter_Gauss2d(h_filter,filter_width,5.0);
@@ -133,7 +133,7 @@ int main(int argc, char **argv){
 
   /* set up device memory and load image and filter data */
   d_image = clCreateBuffer(context,CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,sizeof(uint8_t)*image_size,image.bits,NULL);
-  d_filter = clCreateBuffer(context,CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,sizeof(double)*filter_len*num_filters,h_filter,NULL);
+  d_filter = clCreateBuffer(context,CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,sizeof(float)*filter_len*num_filters,h_filter,NULL);
   d_result = clCreateBuffer(context,CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,sizeof(uint8_t)*image_size,h_result,NULL);
 
   kernel = clCreateKernel(program,"convolve2d",&err);
@@ -154,7 +154,7 @@ int main(int argc, char **argv){
 
   /* write buffers to global memory */
   err = clEnqueueWriteBuffer(commands,d_image,CL_FALSE,0,sizeof(uint8_t)*image_size,image.bits,0,NULL,NULL);
-  err = clEnqueueWriteBuffer(commands,d_filter,CL_FALSE,0,sizeof(double)*filter_len,h_filter,0,NULL,NULL);
+  err = clEnqueueWriteBuffer(commands,d_filter,CL_FALSE,0,sizeof(float)*filter_len,h_filter,0,NULL,NULL);
 
   const size_t global[2] = {image_size, num_filters};
 

@@ -9,7 +9,7 @@
  * filter_width: width of each filter
  * filter_width is assumed to be odd
  */
-extern void filter_Gauss2dbank(double *bank,unsigned int num_filters, unsigned int filter_width);
+extern void filter_Gauss2dbank(float *bank,unsigned int num_filters, unsigned int filter_width);
 
 /* create a 2d Gaussian
  * filter: array to put Guassian into
@@ -17,7 +17,7 @@ extern void filter_Gauss2dbank(double *bank,unsigned int num_filters, unsigned i
  * sigma: standard deviation
  * n is assumed to be odd
  */
-extern void filter_Gauss2d(double *filter, unsigned int n, double sigma);
+extern void filter_Gauss2d(float *filter, unsigned int n, float sigma);
 
 
 #endif

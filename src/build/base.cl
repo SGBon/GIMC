@@ -4,7 +4,7 @@
  */
 __kernel
 void convolve2d(__global unsigned char *image,
-  __global double *filter,
+  __global float *filter,
   __global unsigned char *result,
   unsigned int image_width,
   unsigned int image_height,
@@ -32,20 +32,6 @@ void convolve2d(__global unsigned char *image,
     for(unsigned int i = 0; i < filter_len; ++i){
       int col = (cornerx) + (i % filter_width);
       int row = (cornery) + ((i -(i%filter_width))/filter_width);
-
-      /* for row and column, if either go out of bounds, mirror the pixels */
-      /*
-      if(row < 0){
-        row = -row;
-      }else if(row > image_height){
-        row = image_height - (row - image_height);
-      }
-
-      if(col < 0){
-        col = -col;
-      }else if (col > image_width){
-        col = image_width - (col - image_width);
-      }*/
 
       /* zero the pixels if they are out of bounds */
       float source;
