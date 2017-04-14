@@ -60,6 +60,6 @@ void convolve2d(__global unsigned char *image,
       const float weight = filter[findex];
       sum += source*weight;
     }
-    result[py*image_width + px] = sum;
+    result[py*image_width + px + fid*image_size] = sum;
   }
 }

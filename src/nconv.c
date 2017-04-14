@@ -1,4 +1,7 @@
-/* basis program for image convolution, using naive scheme to compute for use as a benchmark to compare against */
+/* augmented basis program for convolution
+ * performs n convolutions based on command line arguments
+ */
+
 
 /* standard headers */
 #include <stdio.h>
@@ -17,8 +20,8 @@
 #include "filter.h"
 
 int main(int argc, char **argv){
-  if(argc < 3){
-    printf("Usage: %s [Image File] [Device Option]\n",argv[0]);
+  if(argc < 5){
+    printf("Usage: %s [Image File] [Device Option] [Number of Filters] [Size of Filters]\n",argv[0]);
     return -1;
   }
 
@@ -119,22 +122,22 @@ int main(int argc, char **argv){
   free_cl_source(kernel_source);
 
   /* setup filters and result on host */
-  const size_t filter_width = 49;
+  const size_t filter_width = atoi(argv[4]);
   const size_t filter_len = filter_width*filter_width;
-  const unsigned int num_filters = 1;
+  const unsigned int num_filters = atoi(argv[3]);
   const size_t image_size = image.width*image.height;
   double *h_filter = malloc(sizeof(double)*filter_len);
 
   /* get a Gaussian */
   filter_Gauss2d(h_filter,filter_width,5.0);
 
-  uint8_t *h_result = malloc(sizeof(uint8_t)*image_size);
-  memset(h_result,0,sizeof(uint8_t)*image_size);
+  uint8_t *h_result = malloc(sizeof(uint8_t)*image_size*num_filters);
+  memset(h_result,0,sizeof(uint8_t)*image_size*num_filters);
 
   /* set up device memory and load image and filter data */
   d_image = clCreateBuffer(context,CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,sizeof(uint8_t)*image_size,image.bits,NULL);
   d_filter = clCreateBuffer(context,CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,sizeof(double)*filter_len*num_filters,h_filter,NULL);
-  d_result = clCreateBuffer(context,CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,sizeof(uint8_t)*image_size,h_result,NULL);
+  d_result = clCreateBuffer(context,CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,sizeof(uint8_t)*image_size*num_filters,h_result,NULL);
 
   kernel = clCreateKernel(program,"convolve2d",&err);
   if(err){
@@ -162,7 +165,7 @@ int main(int argc, char **argv){
   err = clEnqueueNDRangeKernel(commands,kernel,2,NULL,global,NULL,0,NULL,NULL);
 
   /* read from buffer after all commands have finished */
-  err = clEnqueueReadBuffer(commands,d_result,CL_TRUE,0,sizeof(uint8_t)*image_size,h_result,0,NULL,NULL);
+  err = clEnqueueReadBuffer(commands,d_result,CL_TRUE,0,sizeof(uint8_t)*image_size*num_filters,h_result,0,NULL,NULL);
 
   /* put result into image */
   memcpy(image.bits,h_result,sizeof(uint8_t)*image_size);

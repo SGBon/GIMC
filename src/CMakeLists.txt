@@ -22,3 +22,7 @@ add_library(GimcImage SHARED ${GIMC_IMAGE_SRC})
 set(BASE_SRC base.c)
 add_executable(Base ${BASE_SRC})
 target_link_libraries(Base GimcImage Common ${FREEIMAGE_LIB} ${OpenCL_LIBRARIES})
+
+set(NCONV_SRC nconv.c)
+add_executable(Nconv ${NCONV_SRC})
+target_link_libraries(Nconv GimcImage Common ${FREEIMAGE_LIB} ${OpenCL_LIBRARIES})
