@@ -3,8 +3,8 @@
  * image and result are assumed to be grayscale with a depth of 8 bits.
  */
 __kernel
-void convolve2d(__global unsigned char *image,
-  __global float *filter,
+void convolve2d(__constant unsigned char *image,
+  __constant float *filter,
   __global unsigned char *result,
   unsigned int image_width,
   unsigned int image_height,

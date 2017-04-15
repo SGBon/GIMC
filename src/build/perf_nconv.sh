@@ -9,7 +9,7 @@ do
   /usr/bin/time -f "%e" ./Nconv ../Black-Star-hen.jpg 0 1 $i 2>> cvw.txt
 done
 
-gpu vary width
+#gpu vary width
 >gvw.txt
 for i in {3..49..2}
 do

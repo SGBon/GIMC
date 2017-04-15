@@ -1,5 +1,6 @@
-/* augmented basis program for convolution
+/* augmented nconv
  * performs n convolutions based on command line arguments
+ * lwf - local work filtering: ie. maximizes work threads taking advantage of local work groups
  */
 
 
@@ -64,7 +65,7 @@ int main(int argc, char **argv){
 
   /* read source */
   char *kernel_source = NULL;
-  read_cl_source("base.cl",&kernel_source);
+  read_cl_source("lwfilter.cl",&kernel_source);
 
   /* get all of the platforms */
   clGetPlatformIDs(0,NULL,&num_platforms);
@@ -128,20 +129,35 @@ int main(int argc, char **argv){
   const size_t image_size = image.width*image.height;
   float *h_filter = malloc(sizeof(float)*filter_len*num_filters);
 
-  /* get a Gaussian */
-  filter_Gauss2dbank(h_filter,num_filters,filter_width);
-
   uint8_t *h_result = malloc(sizeof(uint8_t)*image_size*num_filters);
   memset(h_result,0,sizeof(uint8_t)*image_size*num_filters);
 
   /* set up device memory and load image and filter data */
   d_image = clCreateBuffer(context,CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,sizeof(uint8_t)*image_size,image.bits,NULL);
-  d_filter = clCreateBuffer(context,CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,sizeof(float)*filter_len*num_filters,h_filter,NULL);
-  d_result = clCreateBuffer(context,CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,sizeof(uint8_t)*image_size*num_filters,h_result,NULL);
+  d_filter = clCreateBuffer(context,CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,sizeof(float)*filter_len*num_filters,h_filter,NULL);
+  d_result = clCreateBuffer(context,CL_MEM_WRITE_ONLY | CL_MEM_COPY_HOST_PTR,sizeof(uint8_t)*image_size*num_filters,h_result,NULL);
+
+  /* populate filters with opencl */
+  cl_kernel kernel_bank = clCreateKernel(program,"filter_Gauss2dbank",&err);
+  if(err){
+    print_error("clCreateKernel() filter_Gauss2dbank",err);
+    exit(EXIT_FAILURE);
+  }
+
+  err = clSetKernelArg(kernel_bank,0,sizeof(cl_mem),&d_filter);
+  err |= clSetKernelArg(kernel_bank,1,sizeof(unsigned int),&num_filters);
+  err |= clSetKernelArg(kernel_bank,2,sizeof(size_t),&filter_width);
+
+  const size_t bank_global[2] = {num_filters,filter_len};
+
+  const size_t bank_local[2] = {1,filter_len};
+
+  /* execute filter bank kernel for execution */
+  err = clEnqueueNDRangeKernel(commands,kernel_bank,2,NULL,bank_global,bank_local,0,NULL,NULL);
 
   kernel = clCreateKernel(program,"convolve2d",&err);
   if(err){
-    print_error("clCreateKernel()",err);
+    print_error("clCreateKernel() convolve2d",err);
     exit(EXIT_FAILURE);
   }
 
@@ -157,12 +173,11 @@ int main(int argc, char **argv){
 
   /* write buffers to global memory */
   err = clEnqueueWriteBuffer(commands,d_image,CL_FALSE,0,sizeof(uint8_t)*image_size,image.bits,0,NULL,NULL);
-  err = clEnqueueWriteBuffer(commands,d_filter,CL_FALSE,0,sizeof(float)*filter_len*num_filters,h_filter,0,NULL,NULL);
 
-  const size_t global[2] = {image_size, num_filters};
+  const size_t convolve_global[2] = {image_size, num_filters};
 
   /* enqueue kernel for execution */
-  err = clEnqueueNDRangeKernel(commands,kernel,2,NULL,global,NULL,0,NULL,NULL);
+  err = clEnqueueNDRangeKernel(commands,kernel,2,NULL,convolve_global,NULL,0,NULL,NULL);
 
   /* read from buffer after all commands have finished */
   err = clEnqueueReadBuffer(commands,d_result,CL_TRUE,0,sizeof(uint8_t)*image_size*num_filters,h_result,0,NULL,NULL);
