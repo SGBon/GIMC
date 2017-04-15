@@ -9,8 +9,8 @@ void convolve2d(__constant unsigned char *image,
   __global unsigned char *result,
   unsigned int image_width,
   unsigned int image_height,
-  unsigned long filter_width,
-  unsigned long filter_height,
+  unsigned int filter_width,
+  unsigned int filter_height,
   unsigned int num_filters)
 {
   int pixel = get_global_id(0); /* current pixel */
@@ -62,45 +62,48 @@ void convolve2d(__constant unsigned char *image,
 __kernel
 void filter_Gauss2dbank(__global float *bank,
   unsigned int num_filters,
-  unsigned long filter_width)
+  unsigned int filter_width)
 {
-  int filter = get_global_id(0);
-  int cell = get_global_id(1);
-
-  int lid1 = get_local_id(0);
-  int lid2 = get_local_id(1);
-
-  printf("%d %d %d %d\n",filter,cell,lid1,lid2);
+  const unsigned int filter = get_global_id(0);
+  const int cell = get_global_id(1);
 
   const unsigned long filter_len = filter_width*filter_width;
   if(filter < num_filters && cell < filter_len){
-    const float sigma = (filter + 1) * 10.0/num_filters;
+    const float sigma = (filter + 1) * 25.0/num_filters;
     const int offset = (filter_width - 1)/2;
-    int y = cell % filter_width;
-    int x = (cell - y)/filter_width;
+    int y = (cell % filter_width);
+    int x = ((cell - y)/filter_width);
     y -= offset;
     x -= offset;
+
 
     const float value = (1.0/(2*M_PI_F*sigma*sigma)) * (exp(-(x*x + y*y)/(2.0*sigma*sigma)));
 
     bank[filter_len*filter + cell] = value;
+  }
+}
 
-    /* wait for all kernels in work group to finish */
-    barrier(CLK_GLOBAL_MEM_FENCE);
+/* normalize a filter so that all values sum up to 1
+ * bank: buffer which filters reside in
+ * num_filters: maximum number of filters in bank
+ * filter_width: side lengths of filters
+ */
+__kernel
+void filter_normalize(__global float *bank,
+  unsigned int num_filters,
+  unsigned int filter_width)
+{
+  const unsigned int filter = get_global_id(0);
+  const unsigned int filter_len = filter_width*filter_width;
 
-    /* Gaussians are normalized to sum up to 1
-     * perform reduction with first thread of each filter
-     */
-    if(cell == 0){
-      float sum = 0;
-      for(unsigned int i = 0; i < filter_len; ++i){
-        sum += bank[filter_len*filter + i];
-      }
+  if(filter < num_filters){
+    float sum = 0;
+    for(unsigned int i = 0; i < filter_len; ++i){
+      sum += bank[filter_len*filter+i];
+    }
 
-      for(unsigned int i = 0; i < filter_len; ++i){
-        bank[filter_len*filter + i] = bank[filter_len*filter+i] / sum;
-        //printf("%d %u %f\n",filter,i,bank[filter_len*filter+i]);
-      }
+    for(unsigned int i = 0; i < filter_len; ++i){
+      bank[filter_len*filter+i] = bank[filter_len*filter+i] / sum;
     }
   }
 }

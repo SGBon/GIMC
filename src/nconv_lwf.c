@@ -123,8 +123,8 @@ int main(int argc, char **argv){
   free_cl_source(kernel_source);
 
   /* setup filters and result on host */
-  const size_t filter_width = atoi(argv[4]);
-  const size_t filter_len = filter_width*filter_width;
+  const unsigned int filter_width = atoi(argv[4]);
+  const unsigned int filter_len = filter_width*filter_width;
   const unsigned int num_filters = atoi(argv[3]);
   const size_t image_size = image.width*image.height;
   float *h_filter = malloc(sizeof(float)*filter_len*num_filters);
@@ -146,14 +146,37 @@ int main(int argc, char **argv){
 
   err = clSetKernelArg(kernel_bank,0,sizeof(cl_mem),&d_filter);
   err |= clSetKernelArg(kernel_bank,1,sizeof(unsigned int),&num_filters);
-  err |= clSetKernelArg(kernel_bank,2,sizeof(size_t),&filter_width);
+  err |= clSetKernelArg(kernel_bank,2,sizeof(unsigned int),&filter_width);
 
   const size_t bank_global[2] = {num_filters,filter_len};
 
-  const size_t bank_local[2] = {1,filter_len};
-
   /* execute filter bank kernel for execution */
-  err = clEnqueueNDRangeKernel(commands,kernel_bank,2,NULL,bank_global,bank_local,0,NULL,NULL);
+  err = clEnqueueNDRangeKernel(commands,kernel_bank,2,NULL,bank_global,NULL,0,NULL,NULL);
+  if(err){
+    print_error("clEnqueueNDRangeKernel() filter_Gauss2dbank",err);
+    exit(EXIT_FAILURE);
+  }
+
+  /* gaussians are normalized filters, have to execute a normalizing
+   * kernel so that there is an implicit barrier
+   */
+  cl_kernel kernel_normalize = clCreateKernel(program,"filter_normalize",&err);
+  if(err){
+    print_error("clCreateKernel() filter_normalize",err);
+    exit(EXIT_FAILURE);
+  }
+
+  err = clSetKernelArg(kernel_normalize,0,sizeof(cl_mem),&d_filter);
+  err |= clSetKernelArg(kernel_normalize,1,sizeof(unsigned int),&num_filters);
+  err |= clSetKernelArg(kernel_normalize,2,sizeof(unsigned int),&filter_width);
+
+  const size_t normalize_global[1] = {num_filters};
+  err = clEnqueueNDRangeKernel(commands,kernel_normalize,1,NULL,normalize_global,NULL,0,NULL,NULL);
+  if(err){
+    print_error("clEnqueueNDRangeKernel() filter_normalize",err);
+    exit(EXIT_FAILURE);
+  }
+
 
   kernel = clCreateKernel(program,"convolve2d",&err);
   if(err){
@@ -167,8 +190,8 @@ int main(int argc, char **argv){
   err |= clSetKernelArg(kernel,2,sizeof(cl_mem),&d_result);
   err |= clSetKernelArg(kernel,3,sizeof(unsigned int),&image.width);
   err |= clSetKernelArg(kernel,4,sizeof(unsigned int),&image.height);
-  err |= clSetKernelArg(kernel,5,sizeof(size_t),&filter_width);
-  err |= clSetKernelArg(kernel,6,sizeof(size_t),&filter_width);
+  err |= clSetKernelArg(kernel,5,sizeof(unsigned int),&filter_width);
+  err |= clSetKernelArg(kernel,6,sizeof(unsigned int),&filter_width);
   err |= clSetKernelArg(kernel,7,sizeof(unsigned int),&num_filters);
 
   /* write buffers to global memory */

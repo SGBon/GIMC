@@ -30,3 +30,11 @@ void read_cl_source(const char *filename, char **source_out){
 void free_cl_source(char *source){
   free(source);
 }
+
+int next_multiple(int val, int multiple){
+  int i;
+  for(i = multiple; i < val; i+=multiple){
+    printf("%d %d\n",i,val);
+  }
+  return i;
+}
