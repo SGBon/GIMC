@@ -4,11 +4,11 @@
  * takes advantage of local work greeps to further accelerate
  */
 __kernel
-void convolve2d(__constant unsigned char *image,
+void convolve2d(__global unsigned char *image,
   __global float *filter,
   __global unsigned char *result,
-  unsigned int image_width,
-  unsigned int image_height,
+  unsigned long image_width,
+  unsigned long image_height,
   unsigned int filter_width,
   unsigned int filter_height,
   unsigned int num_filters)

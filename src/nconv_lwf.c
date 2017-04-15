@@ -177,7 +177,6 @@ int main(int argc, char **argv){
     exit(EXIT_FAILURE);
   }
 
-
   kernel = clCreateKernel(program,"convolve2d",&err);
   if(err){
     print_error("clCreateKernel() convolve2d",err);
@@ -188,22 +187,32 @@ int main(int argc, char **argv){
   err = clSetKernelArg(kernel,0,sizeof(cl_mem),&d_image);
   err |= clSetKernelArg(kernel,1,sizeof(cl_mem),&d_filter);
   err |= clSetKernelArg(kernel,2,sizeof(cl_mem),&d_result);
-  err |= clSetKernelArg(kernel,3,sizeof(unsigned int),&image.width);
-  err |= clSetKernelArg(kernel,4,sizeof(unsigned int),&image.height);
+  err |= clSetKernelArg(kernel,3,sizeof(size_t),&image.width);
+  err |= clSetKernelArg(kernel,4,sizeof(size_t),&image.height);
   err |= clSetKernelArg(kernel,5,sizeof(unsigned int),&filter_width);
   err |= clSetKernelArg(kernel,6,sizeof(unsigned int),&filter_width);
   err |= clSetKernelArg(kernel,7,sizeof(unsigned int),&num_filters);
 
   /* write buffers to global memory */
   err = clEnqueueWriteBuffer(commands,d_image,CL_FALSE,0,sizeof(uint8_t)*image_size,image.bits,0,NULL,NULL);
-
   const size_t convolve_global[2] = {image_size, num_filters};
 
   /* enqueue kernel for execution */
   err = clEnqueueNDRangeKernel(commands,kernel,2,NULL,convolve_global,NULL,0,NULL,NULL);
+  if(err){
+    print_error("clEnqueueNDRangeKernel() convolve2d",err);
+    exit(EXIT_FAILURE);
+  }
 
   /* read from buffer after all commands have finished */
   err = clEnqueueReadBuffer(commands,d_result,CL_TRUE,0,sizeof(uint8_t)*image_size*num_filters,h_result,0,NULL,NULL);
+
+  /*
+  for(int i = 0; i < image_size; ++i){
+    printf("%u ",h_result[i]);
+  }
+  printf("\n");
+  */
 
   /* put result into image */
   memcpy(image.bits,h_result,sizeof(uint8_t)*image_size);
