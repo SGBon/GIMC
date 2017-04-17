@@ -132,6 +132,9 @@ int main(int argc, char **argv){
   uint8_t *h_result = malloc(sizeof(uint8_t)*image_size*num_filters);
   memset(h_result,0,sizeof(uint8_t)*image_size*num_filters);
 
+  /* size of local work groups */
+  const size_t local_size = next_multiple(filter_width,32);
+
   /* set up device memory and load image and filter data */
   d_image = clCreateBuffer(context,CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,sizeof(uint8_t)*image_size,image.bits,NULL);
   d_filter = clCreateBuffer(context,CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,sizeof(float)*filter_len*num_filters,h_filter,NULL);
@@ -187,18 +190,19 @@ int main(int argc, char **argv){
   err = clSetKernelArg(kernel,0,sizeof(cl_mem),&d_image);
   err |= clSetKernelArg(kernel,1,sizeof(cl_mem),&d_filter);
   err |= clSetKernelArg(kernel,2,sizeof(cl_mem),&d_result);
-  err |= clSetKernelArg(kernel,3,sizeof(size_t),&image.width);
-  err |= clSetKernelArg(kernel,4,sizeof(size_t),&image.height);
-  err |= clSetKernelArg(kernel,5,sizeof(unsigned int),&filter_width);
+  err |= clSetKernelArg(kernel,3,sizeof(float)*local_size,NULL); /* scratch */
+  err |= clSetKernelArg(kernel,4,sizeof(size_t),&image.width);
+  err |= clSetKernelArg(kernel,5,sizeof(size_t),&image.height);
   err |= clSetKernelArg(kernel,6,sizeof(unsigned int),&filter_width);
   err |= clSetKernelArg(kernel,7,sizeof(unsigned int),&num_filters);
 
   /* write buffers to global memory */
   err = clEnqueueWriteBuffer(commands,d_image,CL_FALSE,0,sizeof(uint8_t)*image_size,image.bits,0,NULL,NULL);
-  const size_t convolve_global[2] = {image_size, num_filters};
+  const size_t convolve_global[3] = {image_size, num_filters,local_size};
+  const size_t convolve_local[3] = {1,1,local_size};
 
   /* enqueue kernel for execution */
-  err = clEnqueueNDRangeKernel(commands,kernel,2,NULL,convolve_global,NULL,0,NULL,NULL);
+  err = clEnqueueNDRangeKernel(commands,kernel,3,NULL,convolve_global,convolve_local,0,NULL,NULL);
   if(err){
     print_error("clEnqueueNDRangeKernel() convolve2d",err);
     exit(EXIT_FAILURE);
