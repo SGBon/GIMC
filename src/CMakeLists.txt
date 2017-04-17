@@ -30,3 +30,7 @@ target_link_libraries(Nconv GimcImage Common ${FREEIMAGE_LIB} ${OpenCL_LIBRARIES
 set(NCONV_LWF_SRC nconv_lwf.c)
 add_executable(Nconv_lwf ${NCONV_LWF_SRC})
 target_link_libraries(Nconv_lwf GimcImage Common ${FREEIMAGE_LIB} ${OpenCL_LIBRARIES})
+
+set(NCONV_LWF_P_SRC nconv_lwf_partials.c)
+add_executable(Nconv_lwf_p ${NCONV_LWF_P_SRC})
+target_link_libraries(Nconv_lwf_p GimcImage Common ${FREEIMAGE_LIB} ${OpenCL_LIBRARIES})

@@ -33,8 +33,6 @@ void free_cl_source(char *source){
 
 int next_multiple(int val, int multiple){
   int i;
-  for(i = multiple; i < val; i+=multiple){
-    printf("%d %d\n",i,val);
-  }
+  for(i = multiple; i < val; i+=multiple);
   return i;
 }
